@@ -1,3 +1,6 @@
+# 生成した出力テンプレート（init --out など）をコミットしないための除外。
+# リファレンスとして置く .np は examples/ 以下だけ許可する。
 node_modules/
 *.log
 *.np
+!examples/**/*.np
