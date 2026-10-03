@@ -1,0 +1,22 @@
+let
+  miku = character {
+    name = "hatsune miku";
+    gender = "girl";
+    series = "vocaloid";
+    tags = [ "twintails" "aqua eyes" "neck ribbon" ];
+  };
+  listener = character {
+    gender = "boy";
+    tags = [ "black hair" "glasses" "school uniform" ];
+  };
+in
+{
+  model = "anima";
+  humans = 2;
+  characters = [ miku listener ];
+  quality = [ "masterpiece" "best quality" ];
+  rating = "safe";
+  artists = [ "wlop" ];
+  tags = [ "classroom" "sunlight" ];
+  text = [ "the girl is singing and the boy is listening." ];
+}

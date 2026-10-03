@@ -1,0 +1,8 @@
+{
+  model = "anima";
+  humans = 1;
+  characters = [
+    (character { gender = "girl"; tags = [ "long_hair" "looking_at_viewer" ]; })
+  ];
+  rating = "safe";
+}

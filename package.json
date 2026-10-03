@@ -1,0 +1,19 @@
+{
+  "name": "nix-prompt",
+  "version": "0.1.0",
+  "description": "Nix風に関数型・宣言的に画像生成プロンプトを書き、モデルごとの正しい順序へ正規化して出力するコンパイラ",
+  "type": "module",
+  "module": "src/index.ts",
+  "bin": {
+    "nix-prompt": "./src/cli.ts"
+  },
+  "scripts": {
+    "compile": "bun run src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  model = "anima";
+  humans = 1;
+  characters = [
+    (character {
+      name = "hatsune miku";
+      gender = "girl";
+      series = "vocaloid";
+      tags = [ "twintails" (weighted 1.5 "aqua eyes") "neck ribbon" ];
+    })
+  ];
+  quality = [ "masterpiece" ];
+  meta = [ "highres" ];
+  era = [ "year 2025" ];
+  rating = "sensitive";
+  artists = [ "wlop" ];
+  tags = [ "stage lights" "holding microphone" ];
+  negative = [ "extra arms" ];
+}

@@ -1,0 +1,9 @@
+{
+  model = "anima";
+  humans = 2;
+  characters = [
+    (character { name = "hatsune miku"; gender = "girl"; series = "vocaloid"; tags = [ "twintails" ]; })
+    (character { name = "naruto"; gender = "boy"; series = "naruto"; tags = [ "blonde hair" ]; })
+  ];
+  rating = "safe";
+}

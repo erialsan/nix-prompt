@@ -1,0 +1,10 @@
+{
+  model = "anima";
+  humans = 2;
+  characters = [
+    (character { gender = "girl"; tags = [ "twintails" ]; })
+    (character { gender = "boy"; tags = [ "black hair" ]; })
+  ];
+  tags = [ "2girls" "classroom" ];
+  rating = "safe";
+}
