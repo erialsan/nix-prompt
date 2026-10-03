@@ -1,10 +1,22 @@
 import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { CompileError, CompileFailure, compile } from "../src/compile";
 
 const root = path.resolve(import.meta.dir, "..");
 const ex = (p: string) => path.join(root, "examples", p);
+
+function withTempFile(content: string, fn: (file: string) => void): void {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "nix-prompt-"));
+  const file = path.join(dir, "case.np");
+  fs.writeFileSync(file, content);
+  try {
+    fn(file);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 function errorMessages(file: string, model?: string): string[] {
   const withHint = (e: CompileError) => e.message + (e.hint ? ` | ${e.hint}` : "");
@@ -17,6 +29,59 @@ function errorMessages(file: string, model?: string): string[] {
   }
   throw new Error("エラーになるはずがコンパイルに成功しました");
 }
+
+describe("animal の被写体", () => {
+  test("人数タグを出さず animal focus と species で表現する", () => {
+    const { positive, notes } = compile(ex("girl-and-cat.np"));
+    expect(positive).toContain("1girl");
+    expect(positive).not.toContain("1animal");
+    expect(positive).toContain("animal focus, cat");
+    expect(positive).toContain("2nd cat is black fur and green eyes.");
+    expect(notes.some((n) => n.includes("animal"))).toBe(true);
+  });
+
+  test("illustrious でも同じ人数セクションを出す", () => {
+    const { positive } = compile(ex("girl-and-cat.np"), { model: "illustrious" });
+    expect(positive.startsWith("1girl, animal focus, cat")).toBe(true);
+  });
+
+  test("humans は animal を数えない", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 2; characters = [ (character { gender = "girl"; tags = [ "twintails" ]; }) (character { gender = "animal"; species = "cat"; tags = [ "black fur" ]; }) ]; }\n`,
+      (file) => {
+        const errs = errorMessages(file);
+        expect(errs.some((m) => m.includes("定義は 1 人分しかありません") && m.includes("animal は humans に数えません"))).toBe(true);
+      },
+    );
+  });
+
+  test("animal に species が無いとエラー", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 0; characters = [ (character { gender = "animal"; tags = [ "black fur" ]; }) ]; }\n`,
+      (file) => {
+        expect(errorMessages(file).some((m) => m.includes("species が必要です"))).toBe(true);
+      },
+    );
+  });
+
+  test("species は animal 以外では使えない", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 1; characters = [ (character { gender = "girl"; species = "cat"; tags = [ "twintails" ]; }) ]; }\n`,
+      (file) => {
+        expect(errorMessages(file).some((m) => m.includes('species は gender = "animal" のときだけ'))).toBe(true);
+      },
+    );
+  });
+
+  test("Anima では species のアンダースコアも検出する", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 0; characters = [ (character { gender = "animal"; species = "black_cat"; tags = [ "fur" ]; }) ]; }\n`,
+      (file) => {
+        expect(errorMessages(file).some((m) => m.includes("black_cat") && m.includes("アンダースコア"))).toBe(true);
+      },
+    );
+  });
+});
 
 describe("モデルごとの順序", () => {
   test("anima は品質タグを先頭に置く", () => {

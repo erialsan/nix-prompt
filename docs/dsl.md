@@ -190,7 +190,7 @@ sizes = [ (1 + 2) 4 ];                   # 正しい
 
 | 名前 | 説明 |
 | --- | --- |
-| `character { ... }` | 人物を定義する。`gender` は必須。`name` `tags` `series` `text` は任意 |
+| `character { ... }` | 被写体を定義する。`gender` は必須。`name` `species` `tags` `series` `text` は任意（`species` は `gender = "animal"` のとき必須） |
 | `mkCharacter` | `character` の別名 |
 | `weighted 1.5 "tag"` | `{ tag = "tag"; weight = 1.5; }` を作る糖衣 |
 

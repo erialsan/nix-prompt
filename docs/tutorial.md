@@ -78,6 +78,25 @@ worst quality, low quality, score_1, score_2, score_3, 6 fingers, 6 toes, ai-gen
 
 自然言語を自分で書きたい場合は `text = [ "the girl is singing and the boy is listening." ];` を足します。人物ごとに書くなら `character` の中の `text` がそのまま使われます。
 
+### 動物を一緒に描く
+
+人間以外の被写体は `gender = "animal"` と `species`（種）で書きます。種はタグとして出力され、`humans` には数えません。
+
+```nix
+humans = 1;
+characters = [
+  (character { gender = "girl"; name = "hatsune miku"; tags = [ "twintails" ]; })
+  (character { gender = "animal"; species = "cat"; tags = [ "black fur" ]; })
+];
+```
+
+```
+positive:
+..., 1girl, animal focus, cat, hatsune miku, ..., 1st girl is hatsune miku and twintails., 2nd cat is black fur.
+```
+
+`1animal` のような実在しない人数タグは作りません（Anima の人数タグは girl / boy / other だけです）。
+
 ## 5. モデルを変える
 
 ソースはそのまま、出力先だけ切り替えます。

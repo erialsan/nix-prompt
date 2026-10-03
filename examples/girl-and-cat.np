@@ -1,0 +1,22 @@
+let
+  miku = character {
+    name = "hatsune miku";
+    gender = "girl";
+    series = "vocaloid";
+    tags = [ "twintails" "aqua eyes" ];
+  };
+  cat = character {
+    gender = "animal";
+    species = "cat";
+    tags = [ "black fur" "green eyes" ];
+  };
+in
+{
+  model = "anima";
+  humans = 1;
+  characters = [ miku cat ];
+  quality = [ "masterpiece" "best quality" ];
+  rating = "safe";
+  tags = [ "sitting on bed" ];
+  text = [ "the girl is petting the cat." ];
+}

@@ -31,6 +31,7 @@ function render(model: ModelDef): string {
 # 出力順: ${order}
 # rating に使える値: ${model.ratings.join(" / ")}
 # タグはタグ名をスペース区切りで書きます（アンダースコアは${model.rejectUnderscore ? "エラーになります" : "使えます"}）
+# gender に使える値: girl / boy / other（要 allowOther = true）/ animal（species に種を書く）
 {
   model = "${model.id}";
 

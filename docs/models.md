@@ -25,6 +25,7 @@ bun run src/cli.ts --list-models
 | 作品名などの `()` | `\(` `\)` へ自動エスケープ | そのまま |
 | 既定のネガティブ | 公式推奨の一式（`worst quality, low quality, score_1, ... , watermark, patreon logo`） | `worst quality, low quality, bad anatomy, jpeg artifacts, watermark` |
 | ネガティブの使用 | 可 | 可 |
+| 動物の被写体 | `animal focus` を人数セクションへ付与 | `animal focus` を人数セクションへ付与 |
 
 `--notes` を付けると、そのときに適用された正規化の説明が出ます。
 
@@ -55,6 +56,7 @@ export const MODELS: Record<string, ModelDef> = {
     ratings: ["general", "sensitive", "nsfw"],
     ratingAliases: { safe: "general" },
     artistPrefix: "",
+    animalFocus: "animal focus",
     weightScale: 1.1,
     escapeParens: false,
     rejectUnderscore: false,
@@ -75,6 +77,7 @@ export const MODELS: Record<string, ModelDef> = {
 | `ratings` | 文字列[] | このモデルで使えるレーティング |
 | `ratingAliases` | マップ | 他モデルの語彙からの読み替え |
 | `artistPrefix` | 文字列 | アーティストタグの接頭辞（`"@"` など） |
+| `animalFocus` | 文字列 \| null | 動物の被写体がいるとき人数セクションへ足すタグ（例 `"animal focus"`）。`null` なら出さない |
 | `weightScale` | 数値 | 相対値に掛ける倍率 |
 | `escapeParens` | bool | `()` をエスケープするか |
 | `rejectUnderscore` | bool | タグ内のアンダースコアをエラーにするか |

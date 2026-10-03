@@ -9,7 +9,7 @@
 | フィールド | 型 | 既定 | 説明 |
 | --- | --- | --- | --- |
 | `model` | 文字列 | なし | 出力先モデル。`--model` が指定されていればそちらが優先 |
-| `humans` | 整数 | なし | 宣言する人数。`characters` の数と一致しないとエラー |
+| `humans` | 整数 | なし | 宣言する人数。`characters` のうち `gender = "animal"` 以外の数と一致しないとエラー |
 | `characters` | リスト | `[]` | `character { ... }` のリスト |
 | `quality` | タグのリスト | `[]` | 品質タグ |
 | `meta` | タグのリスト | `[]` | `highres` などのメタタグ |
@@ -27,8 +27,9 @@
 
 | フィールド | 型 | 既定 | 説明 |
 | --- | --- | --- | --- |
-| `gender` | 文字列 | 必須 | `"girl"` `"boy"` `"other"` |
+| `gender` | 文字列 | 必須 | `"girl"` `"boy"` `"other"` `"animal"` |
 | `name` | 文字列 | `null` | キャラクター名 |
+| `species` | 文字列 | `null` | `gender = "animal"` のとき必須。種（`"cat"` `"dragon"` など）で、タグとして出力する |
 | `series` | 文字列 | `null` | 作品名（トップレベルの `series` と突き合わせて混在を検出） |
 | `tags` | タグのリスト | `[]` | その人物の特徴 |
 | `text` | 文字列 | `null` | その人物の自然言語。複数人のとき、自動生成の文の代わりに使われる |
@@ -69,6 +70,17 @@ tags = [
 ### 人数タグの自動生成
 
 `characters` の `gender` を数えて `1girl` `2girls` `1boy` の形で生成します（`girl` → `boy` → `other` の順）。
+
+`gender = "animal"` の被写体は人間ではないので、人数タグを生成しません。代わりに人数セクションへ `animal focus`（モデルごとの設定）と `species` のタグを足します。`humans` もこの被写体は数えません。
+
+```nix
+humans = 1;
+characters = [
+  (character { gender = "girl"; tags = [ "twintails" ]; })
+  (character { gender = "animal"; species = "cat"; tags = [ "black fur" ]; })
+];
+# => 人数セクションは "1girl, animal focus, cat"
+```
 
 - `tags` や `quality` に人数タグを手書きした場合、**検証にだけ使われ、出力からは取り除かれます**（自動生成分と重複しないようにするため）。
 - 手書きの人数タグが人物構成と食い違っていればエラーです。
@@ -131,9 +143,12 @@ Anima は複数人の描き分けに自然言語が効くため、この展開�
 | 条件 | メッセージ（要旨） |
 | --- | --- |
 | 宣言人数より定義が多い | `humans = 2 と宣言されていますが、3 人分の定義があります` |
+| animal が混ざる人数不一致 | `humans = 2 と宣言されていますが、定義は 1 人分しかありません（animal は humans に数えません）` |
 | 宣言人数より定義が少ない | `humans = 2 と宣言されていますが、定義は 1 人分しかありません` |
 | 人物に `gender` が無い | `必須引数 'gender' がありません` |
-| `gender` が girl/boy/other 以外 | `'characters[0].gender' は girl / boy / other のいずれかです（cat）` |
+| `gender` が girl/boy/other/animal 以外 | `'characters[0].gender' は girl / boy / other / animal のいずれかです（person）` |
+| `gender = "animal"` なのに `species` が無い | `'characters[0]' の gender = "animal" には species が必要です` |
+| `species` を animal 以外に指定 | `'characters[0]' の species は gender = "animal" のときだけ指定できます` |
 | `gender = "other"`（既定では不可） | `'characters[0]' の gender = "other" は許可されていません` |
 | 人物に `tags` も `text` も無い | `'characters[1]' に特徴の定義がありません` |
 | 作品が 2 つ以上混在 | `複数の作品が混在しています: vocaloid, naruto` |

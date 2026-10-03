@@ -73,7 +73,7 @@ positive / negative 文字列
 ## テスト
 
 ```bash
-bun test              # 32 件
+bun test              # 38 件
 bunx tsc --noEmit     # 型チェック
 ```
 

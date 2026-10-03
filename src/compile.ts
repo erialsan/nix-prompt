@@ -176,21 +176,26 @@ export function extractSpec(value: Value, ctx: Context, modelOverride: string | 
         const genderRaw = c["gender"];
         let gender: Gender | null = null;
         if (typeof genderRaw === "string") {
-          if (genderRaw === "girl" || genderRaw === "boy" || genderRaw === "other") gender = genderRaw;
-          else errors.push(err(ctx, `'characters[${i}].gender' は girl / boy / other のいずれかです（${genderRaw}）`, cSrc));
+          if (genderRaw === "girl" || genderRaw === "boy" || genderRaw === "other" || genderRaw === "animal") gender = genderRaw;
+          else errors.push(err(ctx, `'characters[${i}].gender' は girl / boy / other / animal のいずれかです（${genderRaw}）`, cSrc));
         } else {
           errors.push(err(ctx, `'characters[${i}]' に gender がありません`, cSrc, `character { gender = "girl"; ... } の形で指定してください`));
         }
         const nameRaw = c["name"];
+        const speciesRaw = c["species"];
         const seriesRaw = c["series"];
         const textRaw = c["text"];
         const extra = Object.keys(c).filter(
-          (k) => !k.startsWith("__") && !["gender", "name", "tags", "series", "text"].includes(k),
+          (k) => !k.startsWith("__") && !["gender", "name", "species", "tags", "series", "text"].includes(k),
         );
         for (const k of extra) errors.push(err(ctx, `'characters[${i}]' に未知のキー '${k}'`, cSrc));
+        if (speciesRaw !== undefined && speciesRaw !== null && typeof speciesRaw !== "string") {
+          errors.push(err(ctx, `'characters[${i}].species' には文字列が必要です`, cSrc));
+        }
         characters.push({
           gender,
           name: typeof nameRaw === "string" ? nameRaw : null,
+          species: typeof speciesRaw === "string" ? speciesRaw : null,
           series: typeof seriesRaw === "string" ? seriesRaw : null,
           text: typeof textRaw === "string" ? textRaw : null,
           tags: c["tags"] === undefined ? [] : collect(() => toTags(c["tags"] as Value, ctx, `characters[${i}].tags`, cSrc), []),
@@ -243,24 +248,38 @@ export function validate(spec: Spec, model: ModelDef | undefined, ctx: Context):
   }
 
   const declared = spec.humans;
-  const n = spec.characters.length;
+  const n = spec.characters.filter((c) => c.gender !== "animal").length;
+  const animalNote = spec.characters.length > n ? "（animal は humans に数えません）" : "";
   if (declared !== null && n > declared) {
     errors.push(
-      err(ctx, `humans = ${declared} と宣言されていますが、${n} 人分の定義があります`, spec.src, "宣言した人数以下の定義にしてください"),
+      err(ctx, `humans = ${declared} と宣言されていますが、${n} 人分の定義があります${animalNote}`, spec.src, "宣言した人数以下の定義にしてください"),
     );
   }
   if (declared !== null && n < declared) {
     errors.push(
-      err(ctx, `humans = ${declared} と宣言されていますが、定義は ${n} 人分しかありません`, spec.src, "各人物に character { ... } を書いてください"),
+      err(ctx, `humans = ${declared} と宣言されていますが、定義は ${n} 人分しかありません${animalNote}`, spec.src, "各人物に character { ... } を書いてください"),
     );
   }
 
-  const tally: Record<string, number> = { girl: 0, boy: 0, other: 0 };
+  const tally: Record<string, number> = { girl: 0, boy: 0, other: 0, animal: 0 };
   spec.characters.forEach((c, i) => {
     if (c.gender) tally[c.gender]++;
     if (c.gender === "other" && !spec.allowOther) {
       errors.push(
         err(ctx, `'characters[${i}]' の gender = "other" は許可されていません`, c.src, "girl / boy を使うか、allowOther = true を指定してください"),
+      );
+    }
+    if (c.gender === "animal") {
+      if (!c.species || c.species.trim() === "") {
+        errors.push(
+          err(ctx, `'characters[${i}]' の gender = "animal" には species が必要です`, c.src, `species = "cat" のように種を書いてください`),
+        );
+      } else {
+        checkTag({ tag: c.species, weight: 1, src: c.src }, `characters[${i}].species`, spec, errors, ctx);
+      }
+    } else if (c.species) {
+      errors.push(
+        err(ctx, `'characters[${i}]' の species は gender = "animal" のときだけ指定できます`, c.src),
       );
     }
     if (c.tags.length === 0 && !(c.text && c.text.trim())) {
@@ -357,7 +376,7 @@ const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th",
 
 export function emit(spec: Spec, model: ModelDef): { positive: string; negative: string; notes: string[] } {
   const notes: string[] = [];
-  const tally: Record<string, number> = { girl: 0, boy: 0, other: 0 };
+  const tally: Record<string, number> = { girl: 0, boy: 0, other: 0, animal: 0 };
   for (const c of spec.characters) if (c.gender) tally[c.gender]++;
 
   const dropCounts = (t: Tag) => !COUNT_RE.test(t.tag.trim());
@@ -374,6 +393,15 @@ export function emit(spec: Spec, model: ModelDef): { positive: string; negative:
     tags: [],
     text: [],
   };
+
+  // 動物は人数タグを持たないので、人数セクションに focus タグと種タグを足す。
+  if (tally.animal > 0 && model.animalFocus) sections.counts.push(model.animalFocus);
+  const seenSpecies = new Set<string>();
+  for (const c of spec.characters) {
+    if (c.gender !== "animal" || !c.species || seenSpecies.has(c.species)) continue;
+    seenSpecies.add(c.species);
+    sections.counts.push(renderTag({ tag: c.species, weight: 1, src: c.src }, model));
+  }
 
   if (spec.rating) {
     const normalized = model.ratingAliases[spec.rating] ?? spec.rating;
@@ -404,8 +432,8 @@ export function emit(spec: Spec, model: ModelDef): { positive: string; negative:
         sections.text.push(c.text.trim());
         return;
       }
-      const label = `${ORDINALS[i] ?? `${i + 1}th`} ${c.gender ?? "person"}`;
-      const parts = [c.name, ...c.tags.map((t) => stripWeight(t.tag))].filter((x): x is string => !!x);
+      const label = `${ORDINALS[i] ?? `${i + 1}th`} ${c.gender === "animal" ? c.species ?? "animal" : c.gender ?? "person"}`;
+      const parts = [c.name, ...c.tags.map((t) => stripWeight(t.tag))].filter((x): x is string => !!x && x !== c.species);
       if (parts.length > 0) sections.text.push(`${label} is ${parts.join(" and ")}.`);
     });
   }
@@ -414,6 +442,7 @@ export function emit(spec: Spec, model: ModelDef): { positive: string; negative:
   const allText = [...sections.text, ...userText];
   if (allText.length > 0) sections.text = allText;
   if (spec.characters.length > 1) notes.push("人数が2人以上のため、各人物の特徴を自然言語の文へ展開しました");
+  if (tally.animal > 0) notes.push("animal の被写体は人数タグを生成せず、species と animal focus で表現しました");
 
   const flat: string[] = [];
   for (const key of model.order) {

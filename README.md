@@ -72,7 +72,7 @@ Nix 風の式言語です。プロンプトファイルは「属性集合を返�
 | --- | --- | --- |
 | `model` | 文字列 | 出力先モデル（`--model` が優先） |
 | `humans` | 整数 | 宣言する人数。`characters` の数と一致しないとエラー |
-| `characters` | リスト | `character { gender, name?, series?, tags?, text? }` |
+| `characters` | リスト | `character { gender, name?, species?, series?, tags?, text? }` |
 | `quality` `meta` `era` | タグのリスト | 品質・メタ・年代タグ |
 | `rating` | 文字列 | モデルごとの語彙へ正規化（Anima: `safe/sensitive/nsfw/explicit`） |
 | `artists` | タグのリスト | Anima では出力時に `@` が付く |
@@ -96,7 +96,8 @@ Anima ではアーティストに `@`、括弧のエスケープ、アンダー�
 ## 検証ルール
 
 - `humans` と `characters` の人数一致（超過・不足の両方）
-- 各人物に `gender`（`girl`/`boy`/`other`）と、`tags`/`text` のいずれかの定義
+- 各人物に `gender`（`girl`/`boy`/`other`/`animal`）と、`tags`/`text` のいずれかの定義
+- `gender = "animal"` には `species`（種）が必須。animal は人数タグを出さず `animal focus` と種タグで表し、`humans` には数えない
 - `series` が2つ以上混在していないこと
 - 手書きの人数タグと人物構成の一致
 - `rating` がモデルの語彙にあること
