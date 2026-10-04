@@ -2,6 +2,10 @@ export type SrcRef = { file: string; line: number; col: number } | null;
 
 export type Tag = { tag: string; weight: number; src: SrcRef };
 
+/** tags を分けるカテゴリ。属性集合形式で書いたときはこの順で出力する。 */
+export const TAG_CATEGORIES = ["looks", "outfit", "pose", "item", "other"] as const;
+export type TagCategory = (typeof TAG_CATEGORIES)[number];
+
 /** 被写体の種類。animal は人間以外で、人数タグを出さず species と animal focus で表す。 */
 export type Gender = "girl" | "boy" | "other" | "animal";
 
@@ -31,6 +35,7 @@ export type Spec = {
   negative: Tag[];
   allowMultipleSeries: boolean;
   allowOther: boolean;
+  allowDuplicateCharacters: boolean;
   src: SrcRef;
 };
 

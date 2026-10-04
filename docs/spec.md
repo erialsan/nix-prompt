@@ -17,11 +17,12 @@
 | `rating` | 文字列 | なし | モデルごとの語彙へ正規化される |
 | `artists` | タグのリスト | `[]` | モデルによって接頭辞が付く（Anima は `@`） |
 | `series` | タグのリスト | `[]` | 作品。1プロンプト1作品 |
-| `tags` | タグのリスト | `[]` | その他のタグ |
+| `tags` | タグのリストまたはカテゴリ集合 | `[]` | その他のタグ。[カテゴリ形式](#tags-のカテゴリ) でも書ける |
 | `text` | 文字列のリスト | `[]` | 自然言語の文 |
 | `negative` | タグのリスト | `[]` | モデル既定のネガティブに追加される |
 | `allowMultipleSeries` | bool | `false` | 複数作品を許可する |
 | `allowOther` | bool | `false` | `gender = "other"` を許可する |
+| `allowDuplicateCharacters` | bool | `false` | 同一キャラクターの複数登場を許可する |
 
 ### character
 
@@ -31,7 +32,7 @@
 | `name` | 文字列 | `null` | キャラクター名 |
 | `species` | 文字列 | `null` | `gender = "animal"` のとき必須。種（`"cat"` `"dragon"` など）で、タグとして出力する |
 | `series` | 文字列 | `null` | 作品名（トップレベルの `series` と突き合わせて混在を検出） |
-| `tags` | タグのリスト | `[]` | その人物の特徴 |
+| `tags` | タグのリストまたはカテゴリ集合 | `[]` | その人物の特徴。[カテゴリ形式](#tags-のカテゴリ) でも書ける |
 | `text` | 文字列 | `null` | その人物の自然言語。複数人のとき、自動生成の文の代わりに使われる |
 
 ## タグの書き方
@@ -47,6 +48,42 @@ tags = [
 ```
 
 タグ名は前後の空白を落とし、連続する空白は 1 つにまとめてから出力します。
+
+## tags のカテゴリ
+
+`tags` は `character` とトップレベルの両方で、カテゴリごとの属性集合として書けます。
+
+```nix
+(character {
+  gender = "girl";
+  tags = {
+    looks  = [ "twintails" "aqua eyes" ];
+    outfit = [ "neck ribbon" ];
+    pose   = [ "singing" ];
+  };
+})
+```
+
+- カテゴリは `looks`（髪型・目・体つきなど見た目） `outfit`（服装） `pose`（姿勢・動作） `item`（持ち物） `other`（その他） の 5 つです。未知のキーはエラーになります。
+- 各カテゴリにはタグのリストを書きます。`weighted` も使えます。
+- **出力はカテゴリ順（looks → outfit → pose → item → other）に並びます**。書いた順は保存されません。
+- リスト形式（`tags = [ ... ]`）も引き続き使え、その場合は書いた順のまま出力されます。
+
+属性集合は DSL の演算子で合成できるので、共通の定義から差分を作れます。
+
+```nix
+let
+  base = {
+    looks  = [ "twintails" "aqua eyes" ];
+    outfit = [ "neck ribbon" ];
+    pose   = [ "standing" ];
+  };
+in
+character {
+  gender = "girl";
+  tags = base // { pose = base.pose ++ [ "singing" ]; };  # pose だけ差し替え
+}
+```
 
 ## 出力の組み立て方
 
@@ -151,6 +188,9 @@ Anima は複数人の描き分けに自然言語が効くため、この展開�
 | `species` を animal 以外に指定 | `'characters[0]' の species は gender = "animal" のときだけ指定できます` |
 | `gender = "other"`（既定では不可） | `'characters[0]' の gender = "other" は許可されていません` |
 | 人物に `tags` も `text` も無い | `'characters[1]' に特徴の定義がありません` |
+| 同一キャラクターが複数回登場 | `同一キャラクター 'hatsune miku' が複数回登場しています` |
+| tags の未知のカテゴリ | `'characters[0].tags' のキー 'hairstyle' は未知のカテゴリです` |
+| カテゴリにリスト以外を指定 | `'characters[0].tags.looks' にはタグのリストが必要です` |
 | 作品が 2 つ以上混在 | `複数の作品が混在しています: vocaloid, naruto` |
 | アンダースコア入りタグ（Anima） | `タグ 'long_hair' にアンダースコアは使えません（anima）` |
 | 手書きの人数タグが構成と不一致 | `人数タグ '2girls' が宣言された人物構成と一致しません` |
@@ -167,5 +207,7 @@ Anima は複数人の描き分けに自然言語が効くため、この展開�
 意図的に外したい場合だけ、明示的に許可します。
 
 ```nix
-{ allowMultipleSeries = true; allowOther = true; ... }
+{ allowMultipleSeries = true; allowOther = true; allowDuplicateCharacters = true; ... }
 ```
+
+同一キャラクターの複数登場（同一人物の別衣装・別角度など）は、人数と特徴の対応が壊れやすいため既定でエラーです。意図する場合だけ `allowDuplicateCharacters = true` を指定してください。

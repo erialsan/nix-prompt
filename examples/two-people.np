@@ -3,7 +3,10 @@ let
     name = "hatsune miku";
     gender = "girl";
     series = "vocaloid";
-    tags = [ "twintails" "aqua eyes" "neck ribbon" ];
+    tags = {
+      looks  = [ "twintails" "aqua eyes" ];
+      outfit = [ "neck ribbon" ];
+    };
   };
   listener = character {
     gender = "boy";

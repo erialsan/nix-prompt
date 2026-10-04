@@ -157,6 +157,116 @@ describe("人物の展開", () => {
   });
 });
 
+describe("tags のカテゴリ分解", () => {
+  test("looks / outfit / pose の順に並べて出力する", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 1; characters = [ (character { gender = "girl"; tags = { looks = [ "twintails" "aqua eyes" ]; outfit = [ "neck ribbon" ]; pose = [ "singing" ]; }; }) ]; rating = "safe"; }\n`,
+      (file) => {
+        const { positive } = compile(file);
+        expect(positive).toContain("twintails, aqua eyes, neck ribbon, singing");
+      },
+    );
+  });
+
+  test("リスト形式は従来どおり書いた順のまま", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 1; characters = [ (character { gender = "girl"; tags = [ "singing" "twintails" ]; }) ]; rating = "safe"; }\n`,
+      (file) => {
+        expect(compile(file).positive).toContain("singing, twintails");
+      },
+    );
+  });
+
+  test("// でマージし ++ でカテゴリごとにタグを結合できる", () => {
+    withTempFile(
+      `let
+  base = {
+    looks  = [ "twintails" "aqua eyes" ];
+    outfit = [ "neck ribbon" ];
+    pose   = [ "standing" ];
+  };
+in
+{
+  model = "anima";
+  humans = 1;
+  characters = [
+    (character {
+      gender = "girl";
+      tags = base // { pose = base.pose ++ [ "singing" ]; };
+    })
+  ];
+  rating = "safe";
+}
+`,
+      (file) => {
+        const { positive } = compile(file);
+        expect(positive).toContain("twintails, aqua eyes, neck ribbon, standing, singing");
+      },
+    );
+  });
+
+  test("未知のカテゴリはエラー", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 1; characters = [ (character { gender = "girl"; tags = { hairstyle = [ "twintails" ]; }; }) ]; rating = "safe"; }\n`,
+      (file) => {
+        expect(errorMessages(file).some((m) => m.includes("未知のカテゴリ") && m.includes("hairstyle"))).toBe(true);
+      },
+    );
+  });
+
+  test("カテゴリにリスト以外を渡すとエラー", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 1; characters = [ (character { gender = "girl"; tags = { looks = "twintails"; }; }) ]; rating = "safe"; }\n`,
+      (file) => {
+        expect(errorMessages(file).some((m) => m.includes("characters[0].tags.looks") && m.includes("リストが必要です"))).toBe(true);
+      },
+    );
+  });
+
+  test("トップレベルの tags もカテゴリ形式で書ける", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 1; characters = [ (character { gender = "girl"; tags = [ "twintails" ]; }) ]; tags = { pose = [ "sitting" ]; item = [ "microphone" ]; }; rating = "safe"; }\n`,
+      (file) => {
+        expect(compile(file).positive).toContain("sitting, microphone");
+      },
+    );
+  });
+});
+
+describe("同一キャラクターの重複", () => {
+  test("デフォルトで複数回の登場をエラーにする", () => {
+    const errs = errorMessages(ex("errors/duplicate-character.np"));
+    expect(errs.some((m) => m.includes("同一キャラクター") && m.includes("hatsune miku"))).toBe(true);
+  });
+
+  test("allowDuplicateCharacters = true なら通る", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 2; allowDuplicateCharacters = true; characters = [ (character { name = "hatsune miku"; gender = "girl"; tags = [ "twintails" ]; }) (character { name = "Hatsune Miku"; gender = "girl"; tags = [ "school uniform" ]; }) ]; rating = "safe"; }\n`,
+      (file) => {
+        expect(compile(file).positive).toContain("2girls");
+      },
+    );
+  });
+
+  test("名前の空白・大小の違いだけの重複も検出する", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 2; characters = [ (character { name = "hatsune miku"; gender = "girl"; tags = [ "twintails" ]; }) (character { name = "Hatsune  Miku"; gender = "girl"; tags = [ "school uniform" ]; }) ]; rating = "safe"; }\n`,
+      (file) => {
+        expect(errorMessages(file).some((m) => m.includes("同一キャラクター"))).toBe(true);
+      },
+    );
+  });
+
+  test("名前の無い人物の重複は見ない", () => {
+    withTempFile(
+      `{ model = "anima"; humans = 2; characters = [ (character { gender = "girl"; tags = [ "twintails" ]; }) (character { gender = "girl"; tags = [ "black hair" ]; }) ]; rating = "safe"; }\n`,
+      (file) => {
+        expect(compile(file).positive).toContain("2girls");
+      },
+    );
+  });
+});
+
 describe("コンパイラが弾くもの", () => {
   test("宣言した人数より多い定義", () => {
     const errs = errorMessages(ex("errors/too-many.np"));

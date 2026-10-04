@@ -5,6 +5,7 @@ import { PRELUDE_FILE, PRELUDE_SRC } from "./prelude";
 import { Env, isAttrs, type AttrSet, type Value } from "./values";
 import { getModel, modelIds } from "./models";
 import type { Character, Gender, ModelDef, SectionKey, Spec, SrcRef, Tag } from "./spec";
+import { TAG_CATEGORIES } from "./spec";
 
 export { CompileError, formatError, evaluateFile };
 export type { Spec, Tag, Character, ModelDef, SectionKey };
@@ -24,6 +25,7 @@ const SPEC_FIELDS = [
   "negative",
   "allowMultipleSeries",
   "allowOther",
+  "allowDuplicateCharacters",
 ] as const;
 
 export type CompileResult = {
@@ -122,6 +124,31 @@ function toTags(v: Value, ctx: Context, field: string, src: SrcRef): Tag[] {
   return out;
 }
 
+/**
+ * tags 値をタグ列へ変換する。リスト形式はそのまま、
+ * { looks; outfit; pose; item; other; } の属性集合形式はカテゴリ順（looks → outfit → pose → item → other）に並べる。
+ */
+function toTagList(v: Value, ctx: Context, field: string, src: SrcRef): Tag[] {
+  if (!isAttrs(v)) return toTags(v, ctx, field, src);
+  if (v === null) return [];
+  for (const k of Object.keys(v)) {
+    if (k.startsWith("__")) continue;
+    if (!(TAG_CATEGORIES as readonly string[]).includes(k)) {
+      throw err(ctx, `'${field}' のキー '${k}' は未知のカテゴリです`, src, `使用できるキー: ${TAG_CATEGORIES.join(", ")}`);
+    }
+  }
+  const out: Tag[] = [];
+  for (const cat of TAG_CATEGORIES) {
+    const items = v[cat];
+    if (items === undefined || items === null) continue;
+    if (!Array.isArray(items)) {
+      throw err(ctx, `'${field}.${cat}' にはタグのリストが必要です`, src, `例: ${cat} = [ "..." ];`);
+    }
+    out.push(...toTags(items, ctx, `${field}.${cat}`, src));
+  }
+  return out;
+}
+
 export function extractSpec(value: Value, ctx: Context, modelOverride: string | null): { spec: Spec; errors: CompileError[] } {
   const errors: CompileError[] = [];
   const collect = <T>(fn: () => T, fallback: T): T => {
@@ -198,14 +225,14 @@ export function extractSpec(value: Value, ctx: Context, modelOverride: string | 
           species: typeof speciesRaw === "string" ? speciesRaw : null,
           series: typeof seriesRaw === "string" ? seriesRaw : null,
           text: typeof textRaw === "string" ? textRaw : null,
-          tags: c["tags"] === undefined ? [] : collect(() => toTags(c["tags"] as Value, ctx, `characters[${i}].tags`, cSrc), []),
+          tags: c["tags"] === undefined ? [] : collect(() => toTagList(c["tags"] as Value, ctx, `characters[${i}].tags`, cSrc), []),
           src: cSrc,
         });
       });
   }
 
-  const tagField = (key: string): Tag[] =>
-    body[key] === undefined ? [] : collect(() => toTags(body[key] as Value, ctx, key, src), []);
+  const tagField = (key: string, conv: typeof toTags | typeof toTagList = toTags): Tag[] =>
+    body[key] === undefined ? [] : collect(() => conv(body[key] as Value, ctx, key, src), []);
 
   const textRaw = body["text"];
   let text: string[] = [];
@@ -224,11 +251,12 @@ export function extractSpec(value: Value, ctx: Context, modelOverride: string | 
     rating: typeof body["rating"] === "string" ? body["rating"] : null,
     artists: tagField("artists"),
     series: tagField("series"),
-    tags: tagField("tags"),
+    tags: tagField("tags", toTagList),
     text,
     negative: tagField("negative"),
     allowMultipleSeries: boolField(body["allowMultipleSeries"], false),
     allowOther: boolField(body["allowOther"], false),
+    allowDuplicateCharacters: boolField(body["allowDuplicateCharacters"], false),
     src,
   };
   return { spec, errors };
@@ -288,6 +316,27 @@ export function validate(spec: Spec, model: ModelDef | undefined, ctx: Context):
       );
     }
   });
+
+  if (!spec.allowDuplicateCharacters) {
+    const firstSeen = new Map<string, string>();
+    for (const c of spec.characters) {
+      if (!c.name || c.name.trim() === "") continue;
+      const key = c.name.trim().replace(/\s+/g, " ").toLowerCase();
+      const first = firstSeen.get(key);
+      if (first !== undefined) {
+        errors.push(
+          err(
+            ctx,
+            `同一キャラクター '${c.name}' が複数回登場しています`,
+            c.src,
+            "同じ人物を複数登場させたい場合は allowDuplicateCharacters = true を指定してください",
+          ),
+        );
+      } else {
+        firstSeen.set(key, c.name);
+      }
+    }
+  }
 
   const seriesSet = new Set<string>();
   for (const s of spec.series) seriesSet.add(s.tag);

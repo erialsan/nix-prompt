@@ -6,7 +6,10 @@
       name = "hatsune miku";
       gender = "girl";
       series = "vocaloid";
-      tags = [ "twintails" (weighted 1.5 "aqua eyes") "neck ribbon" ];
+      tags = {
+        looks  = [ "twintails" (weighted 1.5 "aqua eyes") ];
+        outfit = [ "neck ribbon" ];
+      };
     })
   ];
   quality = [ "masterpiece" ];

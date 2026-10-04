@@ -1,0 +1,19 @@
+{
+  model = "anima";
+  humans = 2;
+  characters = [
+    (character {
+      name = "hatsune miku";
+      gender = "girl";
+      series = "vocaloid";
+      tags = { looks = [ "twintails" ]; };
+    })
+    (character {
+      name = "hatsune miku";
+      gender = "girl";
+      series = "vocaloid";
+      tags = { looks = [ "twintails" ]; outfit = [ "school uniform" ]; };
+    })
+  ];
+  rating = "safe";
+}

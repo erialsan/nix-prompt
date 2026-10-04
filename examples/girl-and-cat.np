@@ -3,7 +3,9 @@ let
     name = "hatsune miku";
     gender = "girl";
     series = "vocaloid";
-    tags = [ "twintails" "aqua eyes" ];
+    tags = {
+      looks = [ "twintails" "aqua eyes" ];
+    };
   };
   cat = character {
     gender = "animal";

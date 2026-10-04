@@ -79,12 +79,12 @@ Nix 風の式言語です。プロンプトファイルは「属性集合を返�
 | `rating` | 文字列 | モデルごとの語彙へ正規化（Anima: `safe/sensitive/nsfw/explicit`） |
 | `artists` | タグのリスト | Anima では出力時に `@` が付く |
 | `series` | タグのリスト | 作品。1プロンプト1作品のみ |
-| `tags` | タグのリスト | その他のタグ。人数タグを書くと構成と突き合わせる |
+| `tags` | タグのリスト／カテゴリ集合 | その他のタグ。人数タグを書くと構成と突き合わせる。`{ looks; outfit; pose; item; other; }` でも書ける |
 | `text` | 文字列のリスト | 自然言語 |
 | `negative` | タグのリスト | モデル既定のネガティブに追加される |
-| `allowMultipleSeries` `allowOther` | bool | 明示的にルールを緩める |
+| `allowMultipleSeries` `allowOther` `allowDuplicateCharacters` | bool | 明示的にルールを緩める |
 
-タグは文字列か `{ tag = "chibi"; weight = 1.5; }` で書けます。`weighted 1.5 "chibi"` は糖衣です。
+タグは文字列か `{ tag = "chibi"; weight = 1.5; }` で書けます。`weighted 1.5 "chibi"` は糖衣です。`tags` は `looks / outfit / pose / item / other` の属性集合に分けて書け、`//` と `++` で合成できます（詳細は [プロンプト仕様](docs/spec.md#tags-のカテゴリ)）。
 
 ## 出力順（バックエンド）
 
@@ -101,6 +101,7 @@ Anima ではアーティストに `@`、括弧のエスケープ、アンダー�
 - 各人物に `gender`（`girl`/`boy`/`other`/`animal`）と、`tags`/`text` のいずれかの定義
 - `gender = "animal"` には `species`（種）が必須。animal は人数タグを出さず `animal focus` と種タグで表し、`humans` には数えない
 - `series` が2つ以上混在していないこと
+- 同一キャラクター（同名人物）の複数回登場は不可（`allowDuplicateCharacters = true` で緩和）
 - 手書きの人数タグと人物構成の一致
 - `rating` がモデルの語彙にあること
 - Anima: タグのアンダースコア禁止（`score_1` などの例外を除く）

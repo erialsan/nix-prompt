@@ -20,7 +20,7 @@ Nix 風の関数型・宣言的 DSL で画像生成プロンプトを書き、�
   model = "anima";
   humans = 2;
   characters = [
-    (character { gender = "girl"; name = "hatsune miku"; series = "vocaloid"; tags = [ "twintails" ]; })
+    (character { gender = "girl"; name = "hatsune miku"; series = "vocaloid"; tags = { looks = [ "twintails" ]; }; })
     (character { gender = "boy"; tags = [ "black hair" "glasses" ]; })
   ];
   quality = [ "masterpiece" "best quality" ];

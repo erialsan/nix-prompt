@@ -32,6 +32,7 @@ function render(model: ModelDef): string {
 # rating に使える値: ${model.ratings.join(" / ")}
 # タグはタグ名をスペース区切りで書きます（アンダースコアは${model.rejectUnderscore ? "エラーになります" : "使えます"}）
 # gender に使える値: girl / boy / other（要 allowOther = true）/ animal（species に種を書く）
+# tags は looks / outfit / pose / item / other に分けて書けます（この順で出力。リスト形式も可）
 {
   model = "${model.id}";
 
@@ -41,7 +42,11 @@ function render(model: ModelDef): string {
       gender = "girl";
       name = "character name";
       series = "series name";
-      tags = [ "twintails" (weighted 1.2 "aqua eyes") ];
+      tags = {
+        looks  = [ "twintails" (weighted 1.2 "aqua eyes") ];
+        outfit = [ "neck ribbon" ];
+        pose   = [ "singing" ];
+      };
     })
     (character {
       gender = "boy";

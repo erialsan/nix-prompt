@@ -218,7 +218,10 @@ let
     name = "hatsune miku";
     gender = "girl";
     series = "vocaloid";
-    tags = [ "twintails" (weighted 1.2 "aqua eyes") "neck ribbon" ];
+    tags = {
+      looks  = [ "twintails" (weighted 1.2 "aqua eyes") ];
+      outfit = [ "neck ribbon" ];
+    };
   };
   other = gender: tags: character { inherit gender tags; };
 in
