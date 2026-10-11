@@ -469,6 +469,11 @@ button {
   font-size: 11px;
 }
 
+.app-foot .foot-links {
+  display: flex;
+  gap: 12px;
+}
+
 /* ── 狭い画面 ───────────────────────────────────────────── */
 
 @media (max-width: 980px) {

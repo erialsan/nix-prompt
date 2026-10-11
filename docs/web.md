@@ -1,10 +1,14 @@
 # Web UI（ブラウザで使う）
 
 コンパイラをそのままブラウザへ持っていき、**サーバー無し**でプロンプトを編集・コンパイルできる UI です。
-GitHub Pages にそのまま置けます。
+GitHub Pages に、この説明書（`/docs/`）と同居する形で配信しています。
 
-- 公開URL（`main` を push すると自動更新）: <https://erialsan.github.io/nix-prompt/>
-- ソース: `web/`
+| URL | 内容 |
+| --- | --- |
+| <https://erialsan.github.io/nix-prompt/> | アプリ本体（`main` を push すると自動更新） |
+| <https://erialsan.github.io/nix-prompt/docs/> | この説明書（Markdown から静的生成） |
+
+ソースは `web/`（アプリ）、`web/docs/`（説明書のスタイル）、`scripts/build-docs.ts`（説明書の生成）です。
 
 ## 何ができるか
 
@@ -27,22 +31,30 @@ GitHub Pages にそのまま置けます。
 bun install
 
 bun run web:dev       # 開発サーバー（HMR）
-bun run web:build     # web/dist へ静的出力
+bun run web:build     # web/dist へ静的出力（アプリ + /docs/）
 bun run web:preview   # 出力を確認（http://127.0.0.1:4173/）
 bun run web:check     # Svelte + TS の型チェック
 bun run web:smoke     # ビルド + ブラウザ無しの初期描画検証
 bun run web:examples  # examples/*.np を UI 用に埋め込み直す
+bun run web:docs      # 説明書だけを再生成
 ```
 
 `web:build` は `base: "./"` で出力するため、`/nix-prompt/` のようなサブパス配信でもそのまま動きます。
 
+実ブラウザで操作まで検証する場合（要 Chromium）:
+
+```bash
+bun run scripts/browser-check.ts --url http://127.0.0.1:4173/ --shot /tmp/app.png
+bun run scripts/browser-check.ts --url https://erialsan.github.io/nix-prompt/
+```
+
 ## GitHub Pages へのデプロイ
 
-1. リポジトリの **Settings → Pages → Source** を **GitHub Actions** に変更する（最初の1回だけ）
+1. リポジトリの **Settings → Pages → Source** を **GitHub Actions** にする（最初の1回だけ）
 2. `main` へ push する（`.github/workflows/deploy-pages.yml` が `web/**` などの変更で起動）
 
 ワークフローはデプロイ前に `tsc --noEmit` / `bun test` / `web:check` / `web:smoke` を実行し、
-どれかが失敗すると配信しません。
+どれかが失敗すると配信しません。成果物 `web/dist` には **アプリ（`/`）と説明書（`/docs/`）の両方**が入ります。
 
 ## 仕組み
 
@@ -77,6 +89,10 @@ positive: masterpiece, best quality, safe, 1girl, ...
 negative: worst quality, low quality, ...
 ```
 
+説明書（`/docs/`）は `scripts/build-docs.ts` が `README.md` と `docs/*.md` を marked で HTML 化したものです
+（Jekyll を使わないので CI に Ruby は不要）。見出しアンカーは GitHub と同じ規則で振るため、
+既存の `docs/spec.md#tags-のカテゴリ` のようなリンクがそのまま動きます。
+
 ## 検証
 
 | コマンド | 内容 |
@@ -84,12 +100,21 @@ negative: worst quality, low quality, ...
 | `bun test` | コア + `engine.ts`（仮想FS）+ `pathutil` の 66 テスト |
 | `bunx tsc --noEmit` | コアの型チェック |
 | `bun run web:check` | Svelte コンポーネントを含む型チェック |
-| `bun run web:smoke` | バンドルに Node 依存が混ざっていないこと + SSR で初期描画がコンパイル結果を含むこと |
+| `bun run web:smoke` | バンドルに Node 依存が混ざっていないこと・`/docs/` の生成・SSR での初期描画を 17 項目で検証 |
+| `bun run web:browser` | 実ブラウザで操作し、出力が CLI と一致することを 12 項目で検証（Chromium 必須） |
 
-`web:smoke` はブラウザを起動しないので CI でも動きます（初期表示のみの検証で、操作は検証しません）。
+`web:smoke` はブラウザを起動しないので CI でも動きます。`web:browser` は次のことを確認します。
+
+- 初期テンプレートの positive が `compile()` の結果と**文字列完全一致**（anima / illustrious）
+- モデルを切り替えると人数タグが先頭へ移動して再コンパイルされる
+- 共有URL（`#s=...`）からソースとモデルが復元される
+- 違反例でエラー件数が CLI と一致し、エラー行がハイライトされ、クリックで該当行へ移動する
+- リロードしても `localStorage` から復元される
+- ブラウザのコンソールエラーが無い
 
 ## 制約
 
 - 対応ブラウザは ES2022 + `CompressionStream` を前提とします（共有URLの圧縮。非対応でも無圧縮で動作）。
 - 共有URLはソースを丸ごと含むため、長いプロンプトでは URL が長くなります。
 - 画像生成そのものは行いません（プロンプトのコンパイルだけ）。
+- 日本語の表示は閲覧環境のフォントに依存します（CJK フォントが無い Linux などでは □ になります）。

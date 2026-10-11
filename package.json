@@ -12,11 +12,14 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "web:dev": "vite",
-    "web:build": "vite build",
+    "web:app": "vite build",
+    "web:docs": "bun run scripts/build-docs.ts",
+    "web:build": "bun run web:app && bun run web:docs",
     "web:preview": "vite preview",
     "web:examples": "bun run scripts/gen-examples.ts",
     "web:check": "svelte-check --tsconfig ./tsconfig.web.json",
-    "web:smoke": "vite build && vite build --ssr ssr/smoke-entry.ts --outDir dist-ssr && bun run scripts/smoke-web.ts"
+    "web:browser": "bun run scripts/browser-check.ts",
+    "web:smoke": "bun run web:build && vite build --ssr ssr/smoke-entry.ts --outDir dist-ssr && bun run scripts/smoke-web.ts"
   },
   "devDependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -27,6 +30,7 @@
     "@lezer/highlight": "^1.2.5",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/bun": "latest",
+    "marked": "^18.1.0",
     "svelte": "^5.57.2",
     "svelte-check": "^4.7.6",
     "typescript": "^5",

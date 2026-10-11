@@ -319,5 +319,10 @@
 
 <footer class="app-foot">
   <span>すべてブラウザ内で処理しています（送信なし）</span>
-  <a href="https://github.com/erialsan/nix-prompt" target="_blank" rel="noreferrer">GitHub / ドキュメント</a>
+  <span class="foot-links">
+    {#if !import.meta.env.DEV}
+      <a href="./docs/">ドキュメント</a>
+    {/if}
+    <a href="https://github.com/erialsan/nix-prompt" target="_blank" rel="noreferrer">GitHub</a>
+  </span>
 </footer>

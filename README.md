@@ -61,13 +61,15 @@ bunx tsc --noEmit   # 型チェック
 
 同じコンパイラをブラウザ内で実行する UI があります。**サーバー不要**（送信なし）で、GitHub Pages にそのまま置けます。
 
-公開URL: <https://erialsan.github.io/nix-prompt/>
+- アプリ: <https://erialsan.github.io/nix-prompt/>
+- 説明書: <https://erialsan.github.io/nix-prompt/docs/>
 
 ```bash
 bun install
 bun run web:dev       # 開発サーバー
-bun run web:build     # web/dist へ静的出力
-bun run web:smoke     # ビルド＋ブラウザ無しの初期描画検証
+bun run web:build     # web/dist へ静的出力（アプリ + /docs/）
+bun run web:smoke     # ビルド＋ブラウザ無しの検証（17 項目）
+bun run web:browser --url http://127.0.0.1:4173/   # 実ブラウザで CLI と突き合わせ（12 項目・要 Chromium）
 ```
 
 テンプレート（`init anima` / `init illustrious`）から書き始め、打鍵ごとに positive / negative / notes / JSON が更新されます。モデルを切り替えてもソースは書き換わりません。`examples/` のサンプルと違反例を内蔵し、エラーはクリックで該当行へジャンプします。仮想FS を持つので `import ./base.np` もブラウザ内で解決します。詳細は [Web UI](docs/web.md)。

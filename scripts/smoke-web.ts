@@ -20,19 +20,45 @@ const checks: Check[] = [];
 const check = (label: string, ok: boolean, detail?: string) => checks.push({ label, ok, detail });
 
 // ── 1. クライアントバンドル ────────────────────────────────────────
-const bundlePath = fs.existsSync(distDir)
-  ? path.join(distDir, "assets", fs.readdirSync(path.join(distDir, "assets")).find((f) => f.endsWith(".js")) ?? "")
+const assetsDir = path.join(distDir, "assets");
+const bundlePath = fs.existsSync(assetsDir)
+  ? path.join(assetsDir, fs.readdirSync(assetsDir).find((f) => f.endsWith(".js")) ?? "")
   : "";
+let bundle = "";
 if (bundlePath === "" || !fs.existsSync(bundlePath)) {
   check("web/dist にバンドルがある", false, "先に bun run web:build を実行してください");
 } else {
-  const bundle = fs.readFileSync(bundlePath, "utf8");
+  bundle = fs.readFileSync(bundlePath, "utf8");
   check("バンドルに node:fs / node:path が含まれない", !/node:(fs|path)/.test(bundle));
   check("バンドルに readFileSync が含まれない", !bundle.includes("readFileSync"));
   check("バンドルサイズが 2MB 未満", Buffer.byteLength(bundle) < 2 * 1024 * 1024, `${(Buffer.byteLength(bundle) / 1024).toFixed(0)} KB`);
 
   const html = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
   check("index.html が相対パスでアセットを参照する", /src="\.\/assets\//.test(html) && /href="\.\/assets\//.test(html));
+}
+
+// ── 1.5 ドキュメントサイト（/docs/） ───────────────────────────────
+{
+  const docsOut = path.join(distDir, "docs");
+  const indexPath = path.join(docsOut, "index.html");
+  if (!fs.existsSync(indexPath)) {
+    check("docs/index.html がある", false, "先に bun run web:docs を実行してください");
+  } else {
+    const index = fs.readFileSync(indexPath, "utf8");
+    check("docs/index.html が説明書を描画している", index.includes("説明書") && index.includes("チュートリアル"));
+    check("docs/site.css がある", fs.existsSync(path.join(docsOut, "site.css")));
+
+    const pages = fs.readdirSync(docsOut).filter((f) => f.endsWith(".html"));
+    check("ドキュメントが 9 ページ生成されている", pages.length >= 9, `${pages.length} ページ`);
+
+    const leftover = pages.filter((f) => /href="[^"]*\.md/.test(fs.readFileSync(path.join(docsOut, f), "utf8")));
+    check("Markdown リンクが .html へ書き換わっている", leftover.length === 0, leftover.join(", "));
+
+    const anchors = fs.readFileSync(path.join(docsOut, "spec.html"), "utf8");
+    check("見出しアンカーが GitHub 互換（#tags-のカテゴリ）", anchors.includes('id="tags-のカテゴリ"'));
+
+    check("アプリからドキュメントへのリンクがある", /"\.\/docs\/"/.test(bundle), "バンドル内のフッターリンク");
+  }
 }
 
 // ── 2. SSR 描画 ───────────────────────────────────────────────────

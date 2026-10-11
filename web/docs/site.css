@@ -1,0 +1,227 @@
+/*
+ * ドキュメントサイト（/docs/）のスタイル。
+ * Web UI と同じ配色で、単体で完結するようにしています。
+ */
+:root {
+  --bg: #0d1117;
+  --bg-2: #161b22;
+  --bg-3: #1c2128;
+  --border: #30363d;
+  --fg: #e6edf3;
+  --fg-dim: #9aa4b2;
+  --fg-faint: #6e7681;
+  --accent: #58a6ff;
+  --accent-dim: #1f6feb;
+  --danger: #f85149;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.site-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.site-head .brand {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--fg);
+}
+
+.site-head .sub {
+  color: var(--fg-dim);
+  font-size: 12px;
+}
+
+.site-head nav {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.side {
+  font-size: 13px;
+}
+
+.side h2 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.side ol {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.side li {
+  margin: 2px 0;
+}
+
+.side li.current > a {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.toc {
+  border-left: 2px solid var(--border);
+  padding-left: 12px;
+  font-size: 12.5px;
+  color: var(--fg-dim);
+}
+
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc li.d3 {
+  padding-left: 12px;
+}
+
+main {
+  min-width: 0;
+}
+
+main h1 {
+  font-size: 26px;
+  margin: 0 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+main h2 {
+  font-size: 19px;
+  margin: 34px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+main h3 {
+  font-size: 16px;
+  margin: 26px 0 8px;
+}
+
+main code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+main pre {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow: auto;
+}
+
+main pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+main table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 14px 0;
+  font-size: 13.5px;
+  display: block;
+  overflow-x: auto;
+}
+
+main th,
+main td {
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+main th {
+  background: var(--bg-3);
+}
+
+main blockquote {
+  margin: 14px 0;
+  padding: 4px 14px;
+  border-left: 3px solid var(--accent-dim);
+  color: var(--fg-dim);
+}
+
+main hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+
+.site-foot {
+  border-top: 1px solid var(--border);
+  padding: 14px 20px;
+  color: var(--fg-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .side {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 4px 18px;
+  }
+}
