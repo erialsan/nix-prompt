@@ -1,5 +1,6 @@
-import path from "node:path";
 import { CompileError, Context, evaluateFile, formatError, makeBuiltins, type Pos } from "./eval";
+import { getDefaultCwd, type SourceReader } from "./io";
+import * as pathutil from "./pathutil";
 import { Parser } from "./dsl";
 import { PRELUDE_FILE, PRELUDE_SRC } from "./prelude";
 import { Env, isAttrs, type AttrSet, type Value } from "./values";
@@ -36,6 +37,17 @@ export type CompileResult = {
   notes: string[];
 };
 
+export type CompileOptions = {
+  /** ファイル内の `model` より優先する出力先モデル。 */
+  model?: string | null;
+  /** 相対パスの基準ディレクトリ。既定は Node なら cwd、ブラウザなら `/`。 */
+  cwd?: string | null;
+  /** ソースの読み込み手段。ブラウザでは仮想FSを渡す。 */
+  reader?: SourceReader | null;
+  /** 事前に渡すソース（キーはパス、相対なら cwd 基準で解決）。 */
+  sources?: Record<string, string> | Map<string, string>;
+};
+
 export class CompileFailure extends Error {
   constructor(
     public errors: CompileError[],
@@ -46,9 +58,16 @@ export class CompileFailure extends Error {
   }
 }
 
-export function createContext(entryFile: string): Context {
-  const ctx = new Context(path.resolve(entryFile));
+export function createContext(entryFile: string, options: CompileOptions = {}): Context {
+  const cwd = options.cwd ?? getDefaultCwd();
+  const ctx = new Context(pathutil.resolve(cwd, entryFile), { reader: options.reader ?? null, cwd });
   ctx.sources.set(PRELUDE_FILE, PRELUDE_SRC);
+  if (options.sources) {
+    const entries = options.sources instanceof Map ? [...options.sources.entries()] : Object.entries(options.sources);
+    for (const [file, source] of entries) {
+      ctx.sources.set(pathutil.resolve(cwd, file), source);
+    }
+  }
   return ctx;
 }
 
@@ -67,7 +86,7 @@ export function programEnv(ctx: Context) {
 
 export function loadProgram(file: string, ctx: Context): Value {
   const env = programEnv(ctx);
-  return evaluateFile(path.resolve(file), ctx, env);
+  return evaluateFile(pathutil.resolve(ctx.cwd, file), ctx, env);
 }
 
 function srcOf(v: Value, ctx: Context): SrcRef {
@@ -512,10 +531,10 @@ function stripWeight(tag: string): string {
   return tag.trim().replace(/\s+/g, " ");
 }
 
-export function compile(file: string, options: { model?: string | null } = {}): CompileResult {
-  const ctx = createContext(file);
+export function compile(file: string, options: CompileOptions = {}): CompileResult {
+  const ctx = createContext(file, options);
   const modelOverride = options.model ?? null;
-  const value = loadProgram(file, ctx);
+  const value = loadProgram(ctx.entryFile, ctx);
   const { spec, errors: extractErrors } = extractSpec(value, ctx, modelOverride);
   const model = spec.model ? getModel(spec.model) : undefined;
   const errors = [...extractErrors, ...validate(spec, model, ctx)];

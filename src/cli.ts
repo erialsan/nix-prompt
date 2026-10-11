@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import "./node-io";
 import fs from "node:fs";
 import path from "node:path";
 import { CompileFailure, compile, createContext, formatError } from "./compile";

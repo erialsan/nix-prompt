@@ -1,4 +1,6 @@
 import { Lexer, Parser, SyntaxError_, type Node, type Pos } from "./dsl";
+import { getDefaultSourceReader, type SourceReader } from "./io";
+import * as pathutil from "./pathutil";
 import { Builtin, Closure, Env, Thunk, deepEqual, force, isAttrs, isCallable, typeOf, show, type AttrSet, type Value } from "./values";
 
 export class CompileError extends Error {
@@ -13,13 +15,24 @@ export class CompileError extends Error {
   }
 }
 
+export type ContextOptions = {
+  /** ソースの読み込み手段。未指定なら既定（Node では fs）を使う。 */
+  reader?: SourceReader | null;
+  /** 相対パスの基準ディレクトリ。 */
+  cwd?: string | null;
+};
+
 export class Context {
   pos = new WeakMap<object, { file: string; pos: Pos }>();
   sources = new Map<string, string>();
   file: string;
+  reader: SourceReader | null;
+  cwd: string;
 
-  constructor(public entryFile: string) {
+  constructor(public entryFile: string, options: ContextOptions = {}) {
     this.file = entryFile;
+    this.reader = options.reader ?? null;
+    this.cwd = options.cwd ?? "/";
   }
 }
 
@@ -60,10 +73,16 @@ export function evaluateFile(path: string, ctx: Context, env?: Env): Value {
 }
 
 function readSource(path: string, ctx: Context): string {
-  if (ctx.sources.has(path)) return ctx.sources.get(path)!;
+  const cached = ctx.sources.get(path);
+  if (cached !== undefined) return cached;
+  const reader = ctx.reader ?? getDefaultSourceReader();
+  if (!reader) {
+    // ブラウザなど、ファイルシステムを持たない環境。
+    throw new CompileError(`ファイルを読み込めません: ${path}`, ctx.file, null, "ソースをメモリ上に用意してください");
+  }
   let text: string;
   try {
-    text = require("node:fs").readFileSync(path, "utf8");
+    text = reader(path);
   } catch (e) {
     throw new CompileError(`ファイルを読み込めません: ${path}`, ctx.file, null);
   }
@@ -198,8 +217,7 @@ export function evalNode(node: Node, env: Env, ctx: Context): Value {
 }
 
 function resolvePath(fromFile: string, p: string): string {
-  const path = require("node:path");
-  return path.resolve(path.dirname(fromFile), p);
+  return pathutil.resolve(pathutil.dirname(fromFile), p);
 }
 
 function evalBinop(node: Node & { t: "binop" }, env: Env, ctx: Context): Value {

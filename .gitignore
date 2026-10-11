@@ -4,3 +4,7 @@ node_modules/
 *.log
 *.np
 !examples/**/*.np
+
+# Web UI のビルド成果物（GitHub Pages へは Actions がビルドして配信する）
+web/dist/
+web/dist-ssr/

@@ -1,0 +1,70 @@
+name: Deploy web UI to GitHub Pages
+
+# Web UI（ブラウザ内でコンパイラを動かす静的サイト）を GitHub Pages へ配信します。
+# 事前にリポジトリの Settings → Pages → Source を "GitHub Actions" にしてください。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "src/**"
+      - "examples/**"
+      - "scripts/**"
+      - "vite.config.ts"
+      - "tsconfig*.json"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck compiler
+        run: bunx tsc --noEmit
+
+      - name: Test compiler
+        run: bun test
+
+      - name: Typecheck web UI
+        run: bun run web:check
+
+      # クライアントバンドルの生成と、SSR による初期描画の検証を兼ねます。
+      - name: Build and smoke-test web UI
+        run: bun run web:smoke
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

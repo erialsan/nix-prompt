@@ -25,6 +25,7 @@ Nix 風の**関数型・宣言的**な DSL で画像生成プロンプトを書�
 - [プロンプト仕様](docs/spec.md) — フィールドと検証ルール
 - [モデル](docs/models.md) — モデル別の振る舞いと追加方法
 - [CLI リファレンス](docs/cli.md) — コマンドと出力形式
+- [Web UI](docs/web.md) — ブラウザで使う（サーバー不要・GitHub Pages 配信）
 - [内部設計](docs/design.md) — 構成と拡張ポイント
 
 ## 使い方
@@ -55,6 +56,21 @@ worst quality, low quality, score_1, ..., watermark, patreon logo
 bun test        # テスト
 bunx tsc --noEmit   # 型チェック
 ```
+
+## Web UI（ブラウザだけで動く）
+
+同じコンパイラをブラウザ内で実行する UI があります。**サーバー不要**（送信なし）で、GitHub Pages にそのまま置けます。
+
+公開URL: <https://erialsan.github.io/nix-prompt/>
+
+```bash
+bun install
+bun run web:dev       # 開発サーバー
+bun run web:build     # web/dist へ静的出力
+bun run web:smoke     # ビルド＋ブラウザ無しの初期描画検証
+```
+
+テンプレート（`init anima` / `init illustrious`）から書き始め、打鍵ごとに positive / negative / notes / JSON が更新されます。モデルを切り替えてもソースは書き換わりません。`examples/` のサンプルと違反例を内蔵し、エラーはクリックで該当行へジャンプします。仮想FS を持つので `import ./base.np` もブラウザ内で解決します。詳細は [Web UI](docs/web.md)。
 
 ## DSL
 
@@ -124,6 +140,11 @@ src/models.ts    モデル別の順序と正規化ルール
 src/compile.ts   取り出し・検証・出力
 src/templates.ts init テンプレート
 src/cli.ts       CLI
+src/pathutil.ts  node:path に依存しないパス操作（ブラウザ対応）
+src/io.ts        ソース読み込みの抽象（ブラウザはメモリ、CLI は fs）
+src/node-io.ts   node:fs / cwd を登録（CLI とテストのみ）
+web/             Web UI（Svelte 5 + Vite + CodeMirror 6、ブラウザ内でコンパイル）
+scripts/         サンプル埋め込みと Web スモークテスト
 examples/        サンプルと違反例
 tests/           bun test
 ```
